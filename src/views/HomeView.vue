@@ -88,17 +88,6 @@ getinfo(orderId).then(async (res) => {
     if (orderInfo.value.payMethod.length) {
       form.value.code = orderInfo.value.payMethod[0].code
     }
-
-    const result = await getstatus(orderId);
-    if (result.data.status === 200) {
-      if (result.data.data.orderStatus !== 'PENDING') {
-        router.push(`/message/${orderId}`);
-      } else {
-        if (res.data.data.payLink !== '') {
-          window.location.href = res.data.data.payLink;
-        }
-      }
-    }
   }
 });
 
