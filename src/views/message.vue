@@ -1,9 +1,16 @@
 <template>
   <div class="message-container">
     <div class="message-item-icon">
-      <img src="../assets/images/check-icon.png" class="status-icon" />
-      <h2>Payment failed</h2>
-      <h4>
+      <img src="../assets/images/check-icon.png" class="status-icon"
+        v-if="orderState.orderStatus?.toUpperCase() === 'SUCCESS'" />
+      <img src="../assets/images/loading-icon.png" class="status-icon"
+        v-if="orderState.orderStatus?.toUpperCase() === 'PENDING'" />
+      <img src="../assets/images/error.png" class="status-icon"
+        v-if="orderState.orderStatus?.toUpperCase() === 'FAILED'" />
+      <h2 v-if="orderState.orderStatus?.toUpperCase() === 'SUCCESS'">Payment successful</h2>
+      <h2 v-if="orderState.orderStatus?.toUpperCase() === 'PENDING'">Payment processing</h2>
+      <h2 v-if="orderState.orderStatus?.toUpperCase() === 'FAILED'">Payment failed</h2>
+      <h4 v-if="orderState.orderStatus?.toUpperCase() === 'PENDING'">
         <p>Please wait for the process</p>
         <p>finish,lt'll take minutess</p>
       </h4>
@@ -11,46 +18,49 @@
     <div class="message-list">
       <div class="message-list-text">
         <span>Order ID</span>
-        <span>ORDERU</span>
+        <span>{{ orderInfo.platOrderSn }}</span>
       </div>
       <div class="message-list-text">
         <span>Amount</span>
-        <span>PKR 1.00</span>
+        <span>PKR {{ orderInfo.amount }}</span>
       </div>
       <div class="message-list-text">
         <span>Wallet account</span>
-        <span>2343xxxx7890</span>
+        <span>{{ orderInfo.account }}</span>
       </div>
-      <div class="message-list-text">
+      <!-- <div class="message-list-text">
         <span>CNIC</span>
         <span>192939192</span>
-      </div>
+      </div> -->
       <div class="message-list-text">
         <span>Date</span>
-        <span>Jan 25，2023 17:00</span>
+        <span>{{ orderInfo.creTime ? new Date(orderInfo.creTime * 1000).toDateString() : '' }}</span>
       </div>
-      <div class="message-list-text">
+      <!-- <div class="message-list-text">
         <span>Reference</span>
         <span>6421</span>
-      </div>
+      </div> -->
     </div>
     <div class="message-state">State</div>
     <ul class="message-state-list">
       <li>Repayment has been submitted</li>
-      <li class="error-state">Wait for processing（About 1-3 minutes）</li>
-      <li class="error-state">Go back to your app and check ststus</li>
+      <li :class="{ 'error-state': orderState.orderStatus?.toUpperCase() === 'FAILED' }">Wait for processing（About 1-3
+        minutes）</li>
+      <li :class="{ 'error-state': orderState.orderStatus?.toUpperCase() === 'FAILED' }">Go back to your app and check
+        status</li>
     </ul>
   </div>
 </template>
 
 <script setup>
 import { ref } from "vue";
-import { getstatus } from "@/api/api";
+import { getstatus, getinfo } from "@/api/api";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const loading = ref(false);
 const orderState = ref({});
+const orderInfo = ref({});
 const orderId = router.currentRoute.value.params.orderId;
 
 // 获取订单状态
@@ -59,6 +69,13 @@ getstatus(orderId).then((res) => {
     orderState.value = res.data.data;
   }
 });
+
+// 获取订单信息
+getinfo(orderId).then((res) => {
+  if (res.data.status === 200) {
+    orderInfo.value = res.data.data;
+  }
+})
 </script>
 
 <style lang="scss" scoped>

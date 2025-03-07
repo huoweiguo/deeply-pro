@@ -1,6 +1,6 @@
 <template>
   <div class="container-home">
-    <h1 class="home-time">28:18</h1>
+    <h1 class="home-time">{{ expireTime }}</h1>
     <div class="home-time-description">Time remaining for payment</div>
     <div class="home-amount">
       <div class="home-amount-key">
@@ -15,12 +15,17 @@
         <p>چینل منتخب کریں۔</p>
       </div>
       <div class="recharge-selcet-item">
-        <div class="recharge-selcet-item-icon" :class="{ 'active-icon': form.code === orderInfo.payMethod[0].code }" @click="form.code = orderInfo.payMethod[0].code">
-          <img src="@/assets/images/jazzcash.png" alt="jazzcash" />
-        </div>
-        <div class="recharge-selcet-item-icon" :class="{ 'active-icon': form.code === orderInfo.payMethod[1].code }" @click="form.code = orderInfo.payMethod[1].code">
-          <img src="@/assets/images/easypaisa.png" alt="easypaisa" />
-        </div>
+
+        <template v-if="orderInfo.payMethod.length">
+          <div class="recharge-selcet-item-icon" v-for="item in orderInfo.payMethod" :key="item.code"
+            @click="form.code = item.code" :class="{ 'active-icon': form.code === item.code }">
+            <img src="@/assets/images/jazzcash.png" alt="JAZZCASH" v-if="item.code === 'JAZZCASH'" />
+            <img src="@/assets/images/easypaisa.png" alt="EASYPAISA" v-if="item.code === 'EASYPAISA'" />
+            <img src="@/assets/images/radio_blue.png" class="checked-icon" alt="checked"
+              v-if="item.code === form.code" />
+            <img src="@/assets/images/radio_gray.png" class="checked-icon" alt="unchecked" v-else />
+          </div>
+        </template>
       </div>
     </div>
     <div class="recharge-change border-top-none">
@@ -30,25 +35,33 @@
       </div>
       <input type="text" class="recharge-input" v-model="form.acc" placeholder="Enter your wallet account number" />
     </div>
-    <div class="recharge-change border-top-none">
+    <!-- <div class="recharge-change border-top-none">
       <div class="recharge-text">
         <p>CNIC</p>
         <p></p>
       </div>
       <input type="text" class="recharge-input" placeholder="Enter your cnic number" />
-    </div>
-    <div class="contact-us">Contact us：xxxxxxx</div>
-    <button class="recharge-btn" @click="doSubmit">Submit</button>
+    </div> -->
+    <!-- <div class="contact-us">Contact us：xxxxxxx</div> -->
+    <button class="recharge-btn" :class="{ 'disabled': loading == true }" :disabled="loading"
+      @click="doSubmit">Submit</button>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { getinfo, submit } from "@/api/api";
+import { ref, onUnmounted } from "vue";
+import { getinfo, getstatus, submit } from "@/api/api";
 import { useRouter } from "vue-router";
+import { getRemainingTime } from "@/utils/tools";
+import { useToast } from 'vue-toast-notification';
+import 'vue-toast-notification/dist/theme-sugar.css';
 
 const router = useRouter();
 const loading = ref(false);
+const expireTime = ref('00:00');
+const toast = useToast();
+const timer = ref(null);
+const time = ref(0);
 const orderInfo = ref({
   payMethod: [],
 });
@@ -59,25 +72,102 @@ const form = ref({
   acc: "",
 });
 
-// 获取订单信息
-getinfo(orderId).then((res) => {
+// 获取订单状态
+getstatus(orderId).then((res) => {
   if (res.data.status === 200) {
-    orderInfo.value = res.data.data || {};
+    if (res.data.data.orderStatus !== 'PENDING') {
+      router.push(`/message/${orderId}`);
+    }
   }
 });
 
+// 获取支付方式
+getinfo(orderId).then(async (res) => {
+  if (res.data.status === 200) {
+    orderInfo.value = res.data.data || {}
+    if (orderInfo.value.payMethod.length) {
+      form.value.code = orderInfo.value.payMethod[0].code
+    }
+
+    const result = await getstatus(orderId);
+    if (result.data.status === 200) {
+      if (result.data.data.orderStatus !== 'PENDING') {
+        router.push(`/message/${orderId}`);
+      } else {
+        if (res.data.data.payLink !== '') {
+          window.location.href = res.data.data.payLink;
+        }
+      }
+    }
+  }
+});
+
+// 获取订单信息
+getinfo(orderId).then((res) => {
+  if (res.data.status === 200) {
+    orderInfo.value = res.data.data || {}
+    if (orderInfo.value.payMethod.length) {
+      form.value.code = orderInfo.value.payMethod[0].code
+    }
+    // res.data.data.expTime * 1000 1741339066544
+    clearInterval(timer.value);
+    timer.value = setInterval(() => {
+      let remaining = getRemainingTime(res.data.data.expTime * 1000);
+      if (remaining.diff < 0) {
+        clearInterval(timer.value);
+      } else {
+        expireTime.value = `${remaining.minutes}:${remaining.seconds}`;
+      }
+    }, 1000);
+  }
+});
+
+
+
+onUnmounted(() => {
+  clearInterval(timer.value);
+});
+
+
+
 const doSubmit = () => {
+  const mobileExp = /^(03)[0-9]{9}$/;
   loading.value = true;
+  if (!form.value.code) {
+    toast.error("Please select a payment method");
+    loading.value = false;
+    return;
+  }
+  if (!form.value.acc) {
+    toast.error("Please enter your wallet account number");
+    loading.value = false;
+    return;
+  }
+  if (!mobileExp.test(form.value.acc)) {
+    toast.error("Please enter a valid wallet account number");
+    loading.value = false;
+    return;
+  }
   submit(form.value).then((res) => {
     loading.value = false;
     if (res.data.status == 200) {
-      router.push(`/message/${orderId}`);
+      //router.push(`/message/${orderId}`);
+      window.location.href = res.data.data.payLink;
     } else {
-      alert(res.data.msg);
+      toast.error(res.data.msg);
     }
   });
 };
 </script>
+
+<style lang="scss">
+.v-toast {
+  font-size: 16px !important;
+  bottom: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+}
+</style>
 
 <style lang="scss" scoped>
 .container-home {
@@ -178,10 +268,17 @@ const doSubmit = () => {
         width: 45%;
         height: 1.2rem;
         background-color: #f0f5f9;
+        border: 1px solid #fff;
 
         img {
           height: 0.61rem;
           width: 0.77rem;
+        }
+
+        img.checked-icon {
+          margin-left: 0.5rem;
+          width: 0.35rem;
+          height: 0.35rem
         }
       }
     }
@@ -189,7 +286,7 @@ const doSubmit = () => {
     .active-icon {
       background-color: #ffffff !important;
       box-shadow: 0px 0px 0.26rem -1px rgba(31, 92, 183, 0.4);
-      border: 1px solid rgba(30, 95, 185, 0.5);
+      border: 1px solid rgba(30, 95, 185, 0.5) !important;
     }
 
     .recharge-input {
@@ -222,7 +319,7 @@ const doSubmit = () => {
   }
 
   .recharge-btn {
-    background-color: rgba(32, 50, 104, 0.5);
+    background-color: #1296DB;
     color: #fff;
     height: 0.8rem;
     outline: none;
@@ -231,6 +328,10 @@ const doSubmit = () => {
     width: 100%;
     font-size: 0.3rem;
     font-weight: 600;
+  }
+
+  .recharge-btn.disabled {
+    background-color: #ccc;
   }
 }
 </style>
