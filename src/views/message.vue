@@ -5,15 +5,17 @@
         v-if="orderState.orderStatus?.toUpperCase() === 'SUCCESS'" />
       <img src="../assets/images/loading-icon.png" class="status-icon"
         v-if="orderState.orderStatus?.toUpperCase() === 'PENDING'" />
-      <img src="../assets/images/error.png" class="status-icon"
-        v-if="orderState.orderStatus?.toUpperCase() === 'FAILED'" />
+      <img src="../assets/images/error.png" v-if="orderState.orderStatus?.toUpperCase() === 'FAILED'" />
       <h2 v-if="orderState.orderStatus?.toUpperCase() === 'SUCCESS'">Payment successful</h2>
       <h2 v-if="orderState.orderStatus?.toUpperCase() === 'PENDING'">Payment processing</h2>
-      <h2 v-if="orderState.orderStatus?.toUpperCase() === 'FAILED'">Payment failed</h2>
+      <h2 v-if="orderState.orderStatus?.toUpperCase() === 'FAILED'" class="fcred">Payment failed</h2>
       <h4 v-if="orderState.orderStatus?.toUpperCase() === 'PENDING'">
-        <p>Please wait for the process</p>
-        <p>finish,lt'll take minutess</p>
+        <p>Please approve the transaction</p>
+        <p>in your JazzCash or Easypaisa wallet.</p>
       </h4>
+      <h5 v-if="orderState.orderStatus?.toUpperCase() === 'FAILED'">
+        <p>{{ remark }}</p>
+      </h5>
     </div>
     <div class="message-list">
       <div class="message-list-text">
@@ -53,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { getstatus, getinfo } from "@/api/api";
 import { useRouter } from "vue-router";
 
@@ -62,19 +64,48 @@ const loading = ref(false);
 const orderState = ref({});
 const orderInfo = ref({});
 const orderId = router.currentRoute.value.params.orderId;
+const remark = ref('');
+const timer = ref(null);
 
 // 获取订单状态
-getstatus(orderId).then((res) => {
-  if (res.data.status === 200) {
-    orderState.value = res.data.data;
-  }
-});
+const getOrderStatus = () => {
+  getstatus(orderId).then((res) => {
+    if (res.data.status === 200) {
+      orderState.value = res.data?.data;
+      if (orderState.value.orderStatus?.toUpperCase() === 'FAILED') {
+        remark.value = orderState.value.remark
+      }
+    }
+  })
+};
 
 // 获取订单信息
-getinfo(orderId).then((res) => {
-  if (res.data.status === 200) {
-    orderInfo.value = res.data.data;
-  }
+const getOrderInfo = () => {
+  getinfo(orderId).then((res) => {
+    if (res.data.status === 200) {
+      orderInfo.value = res.data?.data;
+    }
+  })
+}
+
+onMounted(() => {
+  // 获取订单状态
+  getOrderStatus()
+  // 获取订单信息
+  getOrderInfo()
+
+  timer.value = setInterval(() => {
+    if (orderState.value.orderStatus?.toUpperCase() === 'PENDING') {
+      getOrderStatus()
+      getOrderInfo()
+    } else {
+      clearInterval(timer.value)
+    }
+  }, 5000)
+})
+
+onUnmounted(() => {
+  clearInterval(timer.value)
 })
 </script>
 
@@ -98,6 +129,10 @@ getinfo(orderId).then((res) => {
       color: #2258b0;
       line-height: 0.7rem;
       margin-bottom: 0.8rem;
+
+      &.fcred {
+        color: #ea4235;
+      }
     }
 
     h4 {
@@ -107,6 +142,16 @@ getinfo(orderId).then((res) => {
       line-height: 0.4rem;
       text-align: center;
       margin-bottom: 0.8rem;
+    }
+
+    h5 {
+      font-size: 0.26rem;
+      font-weight: normal;
+      margin-bottom: 0.4rem;
+
+      p {
+        color: #ea4235;
+      }
     }
   }
 

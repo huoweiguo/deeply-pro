@@ -1,26 +1,24 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
+import message from '../views/message.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/',
+    path: '/checkout/:sn',
     name: 'home',
-    component: () => import(/* webpackChunkName: "home" */ '../views/HomeView.vue')
+    component: HomeView
   },
   {
     path: '/message/:orderId',
     name: 'message',
-    component: () => import(/* webpackChunkName: "message" */ '../views/message.vue')
+    component: message
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
-})
-
-router.beforeEach((to, from, next) => {
-  next()
 })
 
 export default router

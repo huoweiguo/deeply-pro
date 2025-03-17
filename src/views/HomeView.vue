@@ -14,7 +14,7 @@
         <p>Select Channel</p>
         <p>چینل منتخب کریں۔</p>
       </div>
-      <div class="recharge-selcet-item">
+      <div class="recharge-selcet-item" :class="{ 'recharge-first': orderInfo.payMethod.length == 1 }">
 
         <template v-if="orderInfo.payMethod.length">
           <div class="recharge-selcet-item-icon" v-for="item in orderInfo.payMethod" :key="item.code"
@@ -33,7 +33,9 @@
         <p>Wallet Account Number</p>
         <p>والیٹ اکاؤنٹ نمبر</p>
       </div>
-      <input type="text" class="recharge-input" v-model="form.acc" placeholder="Enter your wallet account number" />
+      <input type="text" class="recharge-input" v-model="form.acc" placeholder="03XXXXXXXXX" />
+    </div>
+    <div class="error-msg" v-if="errorStatus">Note: Account number must start with 03 and be exactly 11 digits long.
     </div>
     <!-- <div class="recharge-change border-top-none">
       <div class="recharge-text">
@@ -49,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from "vue";
+import { ref, onUnmounted, onMounted } from "vue";
 import { getinfo, getstatus, submit } from "@/api/api";
 import { useRouter } from "vue-router";
 import { getRemainingTime } from "@/utils/tools";
@@ -57,6 +59,7 @@ import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
 
 const router = useRouter();
+const errorStatus = ref(false);
 const loading = ref(false);
 const expireTime = ref('00:00');
 const toast = useToast();
@@ -65,7 +68,9 @@ const time = ref(0);
 const orderInfo = ref({
   payMethod: [],
 });
-const orderId = router.currentRoute.value.query.sn || "";
+
+
+const orderId = router.currentRoute.value.params.sn || "";
 const form = ref({
   sn: orderId,
   code: "",
@@ -86,7 +91,7 @@ getinfo(orderId).then(async (res) => {
   if (res.data.status === 200) {
     orderInfo.value = res.data.data || {}
     if (orderInfo.value.payMethod.length) {
-      form.value.code = orderInfo.value.payMethod[0].code
+      form.value.code = orderInfo.value.payMethod[0]?.code
     }
   }
 });
@@ -96,7 +101,7 @@ getinfo(orderId).then((res) => {
   if (res.data.status === 200) {
     orderInfo.value = res.data.data || {}
     if (orderInfo.value.payMethod.length) {
-      form.value.code = orderInfo.value.payMethod[0].code
+      form.value.code = orderInfo.value.payMethod[0]?.code
     }
     // res.data.data.expTime * 1000 1741339066544
     clearInterval(timer.value);
@@ -122,28 +127,35 @@ onUnmounted(() => {
 const doSubmit = () => {
   const mobileExp = /^(03)[0-9]{9}$/;
   loading.value = true;
+  errorStatus.value = false;
   if (!form.value.code) {
     toast.error("Please select a payment method");
     loading.value = false;
     return;
   }
   if (!form.value.acc) {
-    toast.error("Please enter your wallet account number");
+    errorStatus.value = true;
     loading.value = false;
     return;
   }
   if (!mobileExp.test(form.value.acc)) {
-    toast.error("Please enter a valid wallet account number");
+    errorStatus.value = true;
     loading.value = false;
     return;
   }
   submit(form.value).then((res) => {
     loading.value = false;
     if (res.data.status == 200) {
-      //router.push(`/message/${orderId}`);
-      window.location.href = res.data.data.payLink;
+
+      if (res.data.data.payLink) {
+        window.location.href = res.data?.data?.payLink;
+      } else {
+        router.push(`/message/${orderId}`);
+      }
+
     } else {
-      toast.error(res.data.msg);
+      errorStatus.value = true
+      //toast.error(res.data.msg);
     }
   });
 };
@@ -181,6 +193,11 @@ const doSubmit = () => {
     font-weight: 500;
     padding-bottom: 0.4rem;
     border-bottom: 1px solid rgba(151, 151, 151, 0.2);
+  }
+
+  .error-msg {
+    font-size: 0.26rem;
+    color: #ff0505;
   }
 
   .home-amount {
@@ -270,6 +287,10 @@ const doSubmit = () => {
           height: 0.35rem
         }
       }
+    }
+
+    .recharge-first {
+      justify-content: center !important;
     }
 
     .active-icon {

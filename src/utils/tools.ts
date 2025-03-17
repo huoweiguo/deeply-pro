@@ -2,8 +2,6 @@ export const getRemainingTime = (expireTimestamp: number) => {
   const now = Date.now() // 获取当前时间戳‌:ml-citation{ref="1,4" data="citationList"}
   const diff = expireTimestamp - now // 计算剩余毫秒数‌:ml-citation{ref="2,7" data="citationList"}
 
-  console.log(diff, now, expireTimestamp, 'diff')
-
   // 处理已过期情况
   if (diff <= 0) return { diff, days: 0, hours: '00', minutes: '00', seconds: '00' }
 
