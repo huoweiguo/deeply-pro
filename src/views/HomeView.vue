@@ -37,13 +37,15 @@
     </div>
     <div class="error-msg" v-if="errorStatus">Note: Account number must start with 03 and be exactly 11 digits long.
     </div>
-    <!-- <div class="recharge-change border-top-none">
+    <div class="recharge-change border-top-none">
       <div class="recharge-text">
-        <p>CNIC</p>
+        <p>Last 6 digits of CNIC</p>
         <p></p>
       </div>
-      <input type="text" class="recharge-input" placeholder="Enter your cnic number" />
-    </div> -->
+      <input type="text" class="recharge-input" placeholder="Enter the last 6 digits of your CNIC" v-model="form.cnic" @input="limitCNIC" />
+    </div>
+    <div class="error-msg" v-if="errorCnicStatus">Please enter the last 6 digits of your CNIC.</div>
+    
     <!-- <div class="contact-us">Contact us：xxxxxxx</div> -->
     <button class="recharge-btn" :class="{ 'disabled': loading == true }" :disabled="loading"
       @click="doSubmit">Submit</button>
@@ -60,6 +62,7 @@ import 'vue-toast-notification/dist/theme-sugar.css';
 
 const router = useRouter();
 const errorStatus = ref(false);
+const errorCnicStatus = ref(false);
 const loading = ref(false);
 const expireTime = ref('00:00');
 const toast = useToast();
@@ -71,11 +74,21 @@ const orderInfo = ref({
 
 
 const orderId = router.currentRoute.value.params.sn || "";
+// ... existing code ...
 const form = ref({
   sn: orderId,
   code: "",
   acc: "",
+  cnic: "", // 添加 cnic 字段
 });
+
+// 添加限制CNIC输入的方法
+const limitCNIC = (event) => {
+  const value = event.target.value;
+  // 只允许输入数字，并限制为6位
+  form.value.cnic = value.replace(/\D/g, '').slice(0, 6);
+  errorCnicStatus.value = false;
+};
 
 // 获取订单状态
 getstatus(orderId).then((res) => {
@@ -142,6 +155,13 @@ const doSubmit = () => {
     errorStatus.value = true;
     loading.value = false;
     return;
+  }
+  if (!form.value.cnic || form.value.cnic.length !== 6) {
+    errorCnicStatus.value = true;
+    loading.value = false;
+    return;
+  } else {
+    errorCnicStatus.value = false;
   }
   submit(form.value).then((res) => {
     loading.value = false;
