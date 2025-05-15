@@ -16,10 +16,9 @@ export default defineConfig({
   server: {
     // 配置代理
     proxy: {
-      '/api': {
+      '/cashin': {
         target: 'https://api-test.deepaym.com', //设置代理目标
         changeOrigin: true, //是否改变请求源地址
-        rewrite: (path) => path.replace(/^\/api/, '') //将/api 替换成空字符串
       }
     }
   }
