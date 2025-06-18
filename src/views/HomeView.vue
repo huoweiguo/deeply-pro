@@ -38,7 +38,9 @@
           href="mailto:thethirdoceancompany@gmail.com">thethirdoceancompany@gmail.com</a>
       </div>
     </div>
-    <div class="error-msg" v-if="errorStatus">Note: Account number must start with 03 and be exactly 11 digits long.
+    <div class="error-msg-container">
+      <div class="error-msg" v-if="errorStatus">Note: {{ showErrorMsg }}
+      </div>
     </div>
     <!-- <div class="recharge-change border-top-none">
       <div class="recharge-text">
@@ -60,7 +62,7 @@ import { useRouter } from "vue-router";
 import { getRemainingTime } from "@/utils/tools";
 import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
-
+const errorMsg = ref('Account number must start with 03 and be exactly 11 digits long.');
 const router = useRouter();
 const errorStatus = ref(false);
 const loading = ref(false);
@@ -68,6 +70,7 @@ const expireTime = ref('00:00');
 const toast = useToast();
 const timer = ref(null);
 const time = ref(0);
+const showErrorMsg = ref(errorMsg);
 const orderInfo = ref({
   payMethod: [],
 });
@@ -132,16 +135,19 @@ const doSubmit = () => {
   loading.value = true;
   errorStatus.value = false;
   if (!form.value.code) {
-    toast.error("Please select a payment method");
+    showErrorMsg.value = "Please select a payment method";
+    errorStatus.value = true;
     loading.value = false;
     return;
   }
   if (!form.value.acc) {
+    showErrorMsg.value = "Please input Wallet Account Number";
     errorStatus.value = true;
     loading.value = false;
     return;
   }
   if (!mobileExp.test(form.value.acc)) {
+    showErrorMsg.value = errorMsg.value;
     errorStatus.value = true;
     loading.value = false;
     return;
@@ -157,6 +163,7 @@ const doSubmit = () => {
       }
 
     } else {
+      showErrorMsg.value = res.data.msg
       errorStatus.value = true
       //toast.error(res.data.msg);
     }
@@ -209,6 +216,10 @@ const doSubmit = () => {
     font-weight: 500;
     padding-bottom: 0.4rem;
     border-bottom: 1px solid rgba(151, 151, 151, 0.2);
+  }
+
+  .error-msg-container {
+    height: 45px;
   }
 
   .error-msg {
