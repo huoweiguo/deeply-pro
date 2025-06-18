@@ -34,6 +34,9 @@
         <p>والیٹ اکاؤنٹ نمبر</p>
       </div>
       <input type="text" class="recharge-input" v-model="form.acc" placeholder="03XXXXXXXXX" />
+      <div class="contact_us">Contact us: <a
+          href="mailto:thethirdoceancompany@gmail.com">thethirdoceancompany@gmail.com</a>
+      </div>
     </div>
     <div class="error-msg" v-if="errorStatus">Note: Account number must start with 03 and be exactly 11 digits long.
     </div>
@@ -174,6 +177,19 @@ const doSubmit = () => {
 .container-home {
   padding: 0.4rem;
   box-sizing: border-box;
+
+  .contact_us {
+    padding: 0.2rem 0;
+    font-size: 0.28rem;
+    color: #252525;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-weight: 500;
+
+    a {
+      color: #252525;
+      text-decoration: none;
+    }
+  }
 
   .home-time {
     color: #ff0505;
