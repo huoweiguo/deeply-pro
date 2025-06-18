@@ -24,7 +24,7 @@
       </div>
       <div class="message-list-text">
         <span>Amount</span>
-        <span>BDT {{ orderInfo.amount }}</span>
+        <span>PKR {{ orderInfo.amount }}</span>
       </div>
       <div class="message-list-text">
         <span>Wallet account</span>

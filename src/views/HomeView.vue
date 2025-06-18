@@ -7,7 +7,7 @@
         <p>Amount Payable:</p>
         <p>قابل ادائیگی رقم</p>
       </div>
-      <div class="home-amount-value">BDT {{ orderInfo.amount }}</div>
+      <div class="home-amount-value">PKR {{ orderInfo.amount }}</div>
     </div>
     <div class="recharge-change">
       <div class="recharge-text">
