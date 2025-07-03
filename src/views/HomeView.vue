@@ -35,7 +35,7 @@
       </div>
       <input type="text" class="recharge-input" v-model="form.acc" placeholder="03XXXXXXXXX" />
       <div class="contact_us">Contact us: <a
-          href="mailto:thethirdoceancompany@gmail.com">thethirdoceancompany@gmail.com</a>
+          href="mailto:thethirdoceanreport@gmail.com">thethirdoceanreport@gmail.com</a>
       </div>
     </div>
     <div class="error-msg-container">
